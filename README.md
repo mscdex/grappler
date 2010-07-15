@@ -13,7 +13,8 @@ Requirements
 ------------
 
 - Tested with Node v0.1.100+
-- A client supporting one of the aforementioned transports
+- A client supporting one of the aforementioned transports.
+- For HTTP (not websocket) clients, cookies must be enabled.
 
 Notes
 -----
