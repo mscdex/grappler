@@ -4,6 +4,14 @@ var server = new grappler.Server({
 	logger: function(msg, level) {
 		sys.debug(msg);
 	}
+}, function(req, res) {
+	if (req.url.indexOf("/favicon.ico") == 0) {
+		res.writeHead(404);
+		res.end();
+	} else if (req.url.indexOf("/site") == 0) {
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		res.end('Handling /site/* from the grappler HTTP handler callback!');
+	}
 });
 
 server.addListener('connection', function(client) {
@@ -23,6 +31,12 @@ server.addListener('connection', function(client) {
 	client.addListener('disconnect', function() {
 		sys.puts(type + ' client disconnected from ' + client.socket.remoteAddress);
 	});
+	if (type == "HTTP") { // test non-websocket connection (long poll, etc)
+		setTimeout(function() {
+			client.write('Hello from grappler!');
+			client.disconnect();
+		}, 5000);
+	}
 });
 
 server.listen(8080);
