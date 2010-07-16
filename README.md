@@ -14,7 +14,7 @@ Requirements
 
 - Tested with Node v0.1.100+
 - A client supporting one of the aforementioned transports.
-- For HTTP (not websocket) clients, cookies must be enabled.
+- For HTTP (not websocket) clients, cookies must be enabled for clients ONLY if they are going to send messages (i.e. via POST) to the server.
 
 Notes
 -----
