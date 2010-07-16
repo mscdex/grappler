@@ -20,7 +20,7 @@ server.addListener('connection', function(client) {
 	client.addListener('data', function(buffer) {
 		sys.puts('Received the following from ' + type + ' client @ ' + client.socket.remoteAddress + ': ' + buffer.toString());
 	});
-	client.addListener('disconnected', function() {
+	client.addListener('disconnect', function() {
 		sys.puts(type + ' client disconnected from ' + client.socket.remoteAddress);
 	});
 });
