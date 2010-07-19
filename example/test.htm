@@ -1,0 +1,267 @@
+<html>
+	<head>
+		<title>Grappler test page</title>
+		<script type="text/javascript" src="http://__address__/flashws.js"></script>
+		<script type="text/javascript">
+			var address = "__address__", empty = function() {}, ws, sse, lp, mp;
+			WEB_SOCKET_SWF_LOCATION = "WebSocketMain.swf";
+			WEB_SOCKET_DEBUG = true;
+
+			function getXHR() {
+				var xhr = null;
+				try {
+					xhr = new XMLHttpRequest();
+				} catch(e) {}
+				if (!xhr) {
+					try {
+						xhr = new ActiveXObject('Msxml2.XMLHTTP.6.0');
+					} catch(e) {}
+				}
+				if (!xhr) {
+					try {
+						xhr = new ActiveXObject('Msxml2.XMLHTTP.3.0');
+					} catch(e) {}
+				}
+				if (!xhr) {
+					try {
+						xhr = new ActiveXObject('Msxml2.XMLHTTP');
+					} catch(e) {}
+				}
+				return xhr;
+			};
+
+			function xhrSendData(data, method, callback) {
+				var xhr = getXHR();
+
+				xhr.open(method || 'POST', 'http://' + address, true);
+				if (data)
+					xhr.send(data);
+				else
+					xhr.send();
+			}
+
+			function logger(id, message) {
+				document.getElementById(id).innerHTML += '[' + (new Date()) + '] ' + message + '<br />';
+			}
+
+			function ws_connect() {
+				try {
+					ws = new WebSocket("ws://" + address);
+					ws.onmessage = function(ev) { logger('ws_log', 'Received Data: ' + ev.data); };
+					ws.onclose = function() { logger('ws_log', 'Disconnected'); };
+					ws.onopen = function() { logger('ws_log', 'Connected'); };
+				} catch (e) {
+					alert('WebSocket: Unsupported browser');
+				}
+			}
+			function ws_disconnect() {
+				try {
+					ws.close();
+				} catch (e) {
+					alert('WebSocket: You\'re not connected');
+				}
+			}
+			function ws_send() {
+				try {
+					var data = document.getElementById('ws_tosend').value;
+					if (data.length > 0) {
+						ws.send(data);
+						logger('ws_log', 'Sent: ' + data);
+						document.getElementById('ws_tosend').value = "";
+					}
+				} catch (e) {
+					alert('WebSocket: You\'re not connected');
+				}
+			}
+
+			function sse_connect() {
+				try {
+					sse = new EventSource('http://' + address + '/?' + (new Date()).getTime());
+					sse.onmessage = function(ev) { logger('sse_log', 'Received Data: ' + ev.data); };
+					sse.onopen = function(ev) {	logger('sse_log', 'Connected'); };
+					sse.onerror = function(ev) {
+						if (sse.readyState == 2)
+							logger('sse_log', 'Disconnected');
+						else
+							logger('sse_log', 'Connection closing ...');
+					};
+				} catch (e) {
+					alert('Server-Sent Events: Unsupported browser');
+				}
+			}
+			function sse_disconnect() {
+				try {
+					sse.close();
+					// It seems onerror() isn't fired when using .close()?
+					// In that case, log it manually
+					if (sse.readyState == 2)
+						logger('sse_log', 'Disconnected');
+				} catch (e) {
+					alert('Server-Sent Events: You\'re not connected');
+				}
+			}
+			function sse_send() {
+				try {
+					var data = document.getElementById('sse_tosend').value;
+					if (data.length > 0) {
+						xhrSendData(data);
+						logger('sse_log', 'Sent: ' + data);
+						document.getElementById('sse_tosend').value = "";
+					}
+				} catch (e) {
+					alert('Server-Sent Events: You\'re not connected');
+				}
+			}
+
+			function mp_connect() {
+				try {
+					var fnTimeout = function() { if (!mp.dcManual) mp_disconnect(); };
+					var timeoutVal = 4000;
+					mp = (mp ? mp : getXHR());
+					if (typeof mp.multipart == 'undefined')
+						throw "Unsupported browser";
+					mp.multipart = true;
+					mp.open('GET', 'http://' + address + '/?' + (new Date()).getTime(), true);
+					mp.isFirst = true;
+					mp.dcManual = false;
+					mp.setRequestHeader('Accept', 'multipart/x-mixed-replace');
+					mp.onreadystatechange = function() {
+						if (mp.isFirst) {
+							mp.isFirst = false;
+							logger('mp_log', 'Connected');
+						}
+						if (mp.readyState == 3)
+							logger('mp_log', 'Received Data: ' + mp.responseText);
+						else if (mp.readyState == 4)
+							if (mp.status == 0)
+								logger('mp_log', 'Unable to connect');
+							else {
+								if (mp.dcTimeout)
+									clearTimeout(mp.dcTimeout);
+								mp.dcTimeout = setTimeout(fnTimeout, timeoutVal);
+							}
+					};
+					mp.send();
+				} catch (e) {
+					alert('Multipart: Unsupported browser');
+				}
+			}
+			function mp_disconnect() {
+				try {
+					mp.dcManual = true;
+					mp.abort();
+					logger('mp_log', 'Disconnected');
+				} catch (e) {
+					alert('Multipart: You\'re not connected');
+				}
+			}
+			function mp_send() {
+				try {
+					var data = document.getElementById('mp_tosend').value;
+					if (data.length > 0) {
+						xhrSendData(data);
+						logger('mp_log', 'Sent: ' + data);
+						document.getElementById('mp_tosend').value = "";
+					}
+				} catch (e) {
+					alert('Multipart: You\'re not connected');
+				}
+			}
+
+			function lp_connect() {
+				try {
+					lp = (arguments.length > 0 ? arguments[0] : getXHR());
+					lp.open('GET', 'http://' + address + '/?' + (new Date()).getTime(), true);
+					if (!lp.onreadystatechange) {
+						lp.onreadystatechange = function() {
+							if (lp.status == 200 && lp.readyState == 4) {
+								if (lp.responseText.length)
+									logger('lp_log', 'Received Data: ' + lp.responseText);
+								if (!lp.stopping)
+									setTimeout(function() { lp_connect(lp) }, 1);
+							} else if (lp.status == 0 && lp.readyState == 4) {
+								logger('lp_log', 'Disconnected');
+								lp_disconnect();
+							}
+						};
+					}
+					lp.send();
+					if (arguments.length == 0)
+						logger('lp_log', 'Connected');
+				} catch (e) {
+					alert('Long Poll: Unsupported browser');
+				}
+			}
+			function lp_disconnect() {
+				try {
+					lp.abort();
+					lp.stopping = true;
+				} catch (e) {
+					alert('Long Poll: You\'re not connected');
+				}
+			}
+			function lp_send() {
+				try {
+					var data = document.getElementById('lp_tosend').value;
+					if (data.length > 0) {
+						xhrSendData(data);
+						logger('lp_log', 'Sent: ' + data);
+						document.getElementById('lp_tosend').value = "";
+					}
+				} catch (e) {
+					alert('Long Poll: You\'re not connected');
+				}
+			}
+		</script>
+		<style type="text/css">
+			input, a { margin-right: 15px; }
+			.input, .log { border: 1px solid black; }
+			.log { padding: 10px; margin-bottom: 30px; }
+		</style>
+	</head>
+	<body>
+		<form onsubmit="ws_send(); return false;">
+			<fieldset>
+				<legend>WebSocket (incl. Flash-based)</legend>
+				<input type="button" value="Connect" onclick="ws_connect(); return false;" />
+				<input type="text" id="ws_tosend" class="input">
+				<input type="button" value="Send" onclick="ws_send(); return false;" />
+				<input type="button" value="Disconnect" onclick="ws_disconnect(); return false;" />
+			</fieldset>
+		</form>
+		<div id="ws_log" class="log"></div>
+
+		<form onsubmit="sse_send(); return false;">
+			<fieldset>
+				<legend>Server-Sent Events</legend>
+				<input type="button" value="Connect" onclick="sse_connect(); return false;" />
+				<input type="text" id="sse_tosend" class="input">
+				<input type="button" value="Send" onclick="sse_send(); return false;" />
+				<input type="button" value="Disconnect" onclick="sse_disconnect(); return false;" />
+			</fieldset>
+		</form>
+		<div id="sse_log" class="log"></div>
+
+		<form onsubmit="mp_send(); return false;">
+			<fieldset>
+				<legend>Multipart(/x-mixed-replace) -- Firefox only</legend>
+				<input type="button" value="Connect" onclick="mp_connect(); return false;" />
+				<input type="text" id="mp_tosend" class="input">
+				<input type="button" value="Send" onclick="mp_send(); return false;" />
+				<input type="button" value="Disconnect" onclick="mp_disconnect(); return false;" />
+			</fieldset>
+		</form>
+		<div id="mp_log" class="log"></div>
+
+		<form onsubmit="lp_send(); return false;">
+			<fieldset>
+				<legend>Long Poll</legend>
+				<input type="button" value="Connect" onclick="lp_connect(); return false;" />
+				<input type="text" id="lp_tosend" class="input">
+				<input type="button" value="Send" onclick="lp_send(); return false;" />
+				<input type="button" value="Disconnect" onclick="lp_disconnect(); return false;" />
+			</fieldset>
+		</form>
+		<div id="lp_log" class="log"></div>
+	</body>
+</html>
