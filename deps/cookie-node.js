@@ -37,6 +37,8 @@ processCookie = exports.processCookie = function(name, value) {
 
 
 var mutateHttp = function(http){
+	if (http.IncomingMessage.prototype._parseCookies)
+		return;
 
     http.IncomingMessage.prototype._parseCookies = function() {
           var header = this.headers["cookie"] || "",
