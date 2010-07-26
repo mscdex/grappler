@@ -14,7 +14,7 @@ Grappler currently supports the following transports (each with a list of curren
   - Chrome 6, Safari 5, Opera 9.x-10.x (DOM only)
 - Plain TCP connections (Not yet implemented)
 
-* - Some browsers' XMLHttpRequest implementations contain unexpected quirks (i.e. the built-in web browser for Android 1.6)
+\* - Some browsers' XMLHttpRequest implementations contain unexpected quirks (i.e. the built-in web browser for Android 1.6)
 
 Requirements
 ============
@@ -145,7 +145,7 @@ The IP address of the client.
 
 ### write(data, [encoding])
 
-Sends `data` using an optional encoding to the client.
+Sends `data` using an optional `encoding` to the client.
 This function returns `true` if the entire data was flushed successfully to the kernel
 buffer. Otherwise, it will return `false` if all or part of the data was queued in user memory.
 `drain` will be emitted when the kernel buffer is free again.
