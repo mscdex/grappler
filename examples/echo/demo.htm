@@ -1,0 +1,52 @@
+<html>
+	<head>
+		<title>Grappler Broadcast Echo Demo</title>
+		<script type="text/javascript" src="flashws.js"></script>
+    <script type="text/javascript" src="transport.js"></script>
+		<script type="text/javascript">
+      address = '127.0.0.1:8080';
+      conn = initTransport(function() {
+          // connected cb
+          log('Connected!');
+        },
+        function(data) {
+          // data cb
+          log('Received: ' + data);
+        }, function() {
+          // disconnected cb
+          log('Lost connection with the server');
+        }, function(msg) {
+          // error cb
+          log('Unexpected error while communicating with server: ' + msg);
+      });
+      if (!conn.connect)
+        alert('Sorry, you are using an unsupported browser.');
+
+      function log(text) {
+        document.getElementById('log').innerHTML += text + '<br />';
+      }
+      function send() {
+        var text = document.getElementById('text').value,
+            ret = conn.send(text);
+        if (typeof ret === 'string')
+          log('Error while sending data: ' + ret);
+        else
+          log('Sent: ' + text);
+      }
+		</script>
+		<style type="text/css">
+			input, a { margin-right: 15px; }
+			.input, .log { border: 1px solid black; }
+			.log { padding: 10px; margin-bottom: 30px; }
+		</style>
+	</head>
+	<body>
+		<form onsubmit="return false">
+      <input type="button" value="Connect" onclick="conn.connect(address); return false;" />
+      <input type="text" id="text" class="input">
+      <input type="button" value="Send" onclick="send(); return false;" />
+      <input type="button" value="Disconnect" onclick="conn.disconnect(); return false;" />
+		</form>
+		<div id="log" class="log"></div>
+	</body>
+</html>
